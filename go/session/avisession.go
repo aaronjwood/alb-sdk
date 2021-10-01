@@ -53,6 +53,11 @@ type AviError struct {
 	err error
 }
 
+// HttpClient allows callers to inject their own implementations for the SDK to use.
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // PostMultipartRequest performs a POST API call and uploads multipart data to API fileobject/upload
 func (avisess *AviSession) PostMultipartWafAppSignatureObjectRequest(fileLocPtr *os.File, uri string, tenant string, fileParams map[string]string) error {
 	url := avisess.prefix + "/api/wafapplicationsignatureprovider/" + uri
@@ -250,7 +255,7 @@ type AviSession struct {
 	transport *http.Transport
 
 	// internal: reusable client
-	client *http.Client
+	client HttpClient
 
 	// optional lazy authentication flag. This will trigger login when the first API call is made.
 	// The authentication is not performed when the Session object is created.
@@ -328,10 +333,12 @@ func NewAviSession(host string, username string, options ...func(*AviSession) er
 		avisess.timeout = DEFAULT_API_TIMEOUT
 	}
 
-	// attach transport object to client
-	avisess.client = &http.Client{
-		Transport: avisess.transport,
-		Timeout:   avisess.timeout,
+	if avisess.client == nil {
+		// attach transport object to client
+		avisess.client = &http.Client{
+			Transport: avisess.transport,
+			Timeout:   avisess.timeout,
+		}
 	}
 
 	if !avisess.lazyAuthentication {
@@ -504,6 +511,18 @@ func SetTransport(transport *http.Transport) func(*AviSession) error {
 
 func (avisess *AviSession) setTransport(transport *http.Transport) error {
 	avisess.transport = transport
+	return nil
+}
+
+// SetClient allows callers to inject their own HTTP client.
+func SetClient(client HttpClient) func(*AviSession) error {
+	return func(sess *AviSession) error {
+		return sess.setClient(client)
+	}
+}
+
+func (avisess *AviSession) setClient(client HttpClient) error {
+	avisess.client = client
 	return nil
 }
 
