@@ -321,13 +321,6 @@ func NewAviSession(host string, username string, options ...func(*AviSession) er
 		avisess.api_retry_interval = DEFAULT_API_RETRY_INTERVAL
 	}
 
-	// create default transport object
-	if avisess.transport == nil {
-		avisess.transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-	}
-
 	// set default timeout
 	if avisess.timeout == 0 {
 		avisess.timeout = DEFAULT_API_TIMEOUT
