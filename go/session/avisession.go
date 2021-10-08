@@ -334,6 +334,13 @@ func NewAviSession(host string, username string, options ...func(*AviSession) er
 	}
 
 	if avisess.client == nil {
+		// create default transport object
+		if avisess.transport == nil {
+			avisess.transport = &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+		}
+
 		// attach transport object to client
 		avisess.client = &http.Client{
 			Transport: avisess.transport,
@@ -510,6 +517,9 @@ func SetTransport(transport *http.Transport) func(*AviSession) error {
 }
 
 func (avisess *AviSession) setTransport(transport *http.Transport) error {
+	if avisess.client != nil {
+		return errors.New("Cannot set custom Transport for external clients")
+	}
 	avisess.transport = transport
 	return nil
 }
@@ -522,6 +532,9 @@ func SetClient(client HttpClient) func(*AviSession) error {
 }
 
 func (avisess *AviSession) setClient(client HttpClient) error {
+	if avisess.transport != nil {
+		return errors.New("Cannot set custom client when transport is already set to http.Transport")
+	}
 	avisess.client = client
 	return nil
 }
